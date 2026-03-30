@@ -1,14 +1,13 @@
-// src/scorer.js — 代币 × Elon 推文关联评分（Grok API）
+// src/scorer.js — 代币 × Elon 推文关联评分（DeepSeek API）
 'use strict';
 
-const axios         = require('axios');
-const logger        = require('./logger');
-const webshareProxy = require('./webshareProxy');
+const axios  = require('axios');
+const logger = require('./logger');
 
-const GROK_KEY        = process.env.GROK_API_KEY || '';
+const DEEPSEEK_KEY    = process.env.DEEPSEEK_API_KEY || '';
 const SCORE_THRESHOLD = parseFloat(process.env.SCORE_THRESHOLD || '0.6');
-const GROK_MODEL      = process.env.GROK_MODEL || 'grok-4-1-fast';
-const GROK_API        = 'https://api.x.ai/v1/chat/completions';
+const DEEPSEEK_MODEL  = process.env.DEEPSEEK_MODEL || 'deepseek-chat'; // deepseek-chat = DeepSeek-V3
+const DEEPSEEK_API    = 'https://api.deepseek.com/chat/completions';
 
 // ── 构建 Prompt ───────────────────────────────────────────────
 function buildPrompt(token, tweets) {
@@ -24,7 +23,7 @@ function buildPrompt(token, tweets) {
 - 符号: $${token.symbol || '(未知)'}
 - 描述: ${token.description || '(无描述)'}
 
-## Elon Musk 最近 ${process.env.ELON_WINDOW_HOURS || '4'} 小时内的推文
+## Elon Musk 最近 ${process.env.ELON_WINDOW_HOURS || '0.5'} 小时内的推文
 
 ${tweetBlock}
 
@@ -47,24 +46,16 @@ ${tweetBlock}
 }`;
 }
 
-// ── 解析 Grok 返回 ──────────────────────────────────────────
+// ── 解析 DeepSeek 返回 ────────────────────────────────────────
 function parseResponse(text) {
-  // 去掉可能的 markdown 代码块
   const clean = text.replace(/```json|```/g, '').trim();
   return JSON.parse(clean);
 }
 
 // ── 主评分函数 ────────────────────────────────────────────────
-
-/**
- * 对一个代币和当前 Elon 推文列表做关联评分。
- * @param {object} token   - { name, symbol, description }
- * @param {string[]} tweets - Elon 推文文本数组
- * @returns {Promise<{score, matched_tweet, match_type, reason, pass}>}
- */
 async function scoreToken(token, tweets) {
-  if (!GROK_KEY) {
-    logger.warn('[Scorer] GROK_API_KEY 未设置，跳过评分，默认 pass=false');
+  if (!DEEPSEEK_KEY) {
+    logger.warn('[Scorer] DEEPSEEK_API_KEY 未设置，跳过评分，默认 pass=false');
     return { score: 0, matched_tweet: null, match_type: 'none', reason: 'API key 未配置', pass: false };
   }
 
@@ -76,11 +67,11 @@ async function scoreToken(token, tweets) {
   const prompt = buildPrompt(token, tweets);
 
   try {
-    // Grok API 兼容 OpenAI Chat Completions 格式
+    // DeepSeek 兼容 OpenAI Chat Completions 格式
     const { data } = await axios.post(
-      GROK_API,
+      DEEPSEEK_API,
       {
-        model:      GROK_MODEL,
+        model:      DEEPSEEK_MODEL,
         max_tokens: 256,
         messages: [
           { role: 'system', content: '你是一个加密货币叙事分析专家。只输出 JSON，不要任何其他文字。' },
@@ -89,11 +80,10 @@ async function scoreToken(token, tweets) {
       },
       {
         headers: {
-          'Authorization': `Bearer ${GROK_KEY}`,
+          'Authorization': `Bearer ${DEEPSEEK_KEY}`,
           'Content-Type':  'application/json',
         },
         timeout: 15000,
-        ...webshareProxy.getAxiosProxy(),   // Webshare 代理
       }
     );
 
@@ -112,7 +102,7 @@ async function scoreToken(token, tweets) {
     return { ...result, pass };
 
   } catch (e) {
-    logger.warn(`[Scorer] Grok API 调用失败 ${token.symbol}: ${e.message}`);
+    logger.warn(`[Scorer] DeepSeek API 调用失败 ${token.symbol}: ${e.message}`);
     return { score: 0, matched_tweet: null, match_type: 'none', reason: `API错误: ${e.message}`, pass: false };
   }
 }

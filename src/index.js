@@ -13,7 +13,6 @@ const webhookRouter    = require('./routes/webhook');
 const dashboardRouter  = require('./routes/dashboard');
 const { TokenMonitor } = require('./monitor');
 const { scheduleDaily, listReports } = require('./reporter');
-const webshareProxy    = require('./webshareProxy');
 
 const app  = express();
 const PORT = process.env.PORT || 3001;
@@ -52,12 +51,8 @@ global._wss = wss;
 
 // ── Start ─────────────────────────────────────────────────────
 const monitor = TokenMonitor.getInstance();
-
-// 先初始化 Webshare 代理，再启动监控
-webshareProxy.init().then(() => {
-  monitor.start();
-  scheduleDaily(() => monitor.getTradeRecords());
-});
+monitor.start();
+scheduleDaily(() => monitor.getTradeRecords());
 
 httpServer.listen(PORT, () => {
   logger.info(`🚀 Elon MEME Bot  →  http://0.0.0.0:${PORT}`);
