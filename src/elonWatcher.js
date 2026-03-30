@@ -8,7 +8,6 @@
 
 const axios        = require('axios');
 const logger       = require('./logger');
-const webshareProxy = require('./webshareProxy');
 
 const BEARER_TOKEN = process.env.X_BEARER_TOKEN || '';
 const ELON_USER_ID = '44196397';
@@ -46,7 +45,6 @@ async function _fetchTweets() {
           exclude:      'retweets,replies',
         },
         timeout: 10000,
-        ...webshareProxy.getAxiosProxy(),
       }
     );
 
