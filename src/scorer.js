@@ -1,12 +1,13 @@
 // src/scorer.js — 代币 × Elon 推文关联评分（Grok API）
 'use strict';
 
-const axios  = require('axios');
-const logger = require('./logger');
+const axios         = require('axios');
+const logger        = require('./logger');
+const webshareProxy = require('./webshareProxy');
 
 const GROK_KEY        = process.env.GROK_API_KEY || '';
 const SCORE_THRESHOLD = parseFloat(process.env.SCORE_THRESHOLD || '0.6');
-const GROK_MODEL      = process.env.GROK_MODEL || 'grok-3-mini';   // grok-3-mini 足够，速度快且便宜
+const GROK_MODEL      = process.env.GROK_MODEL || 'grok-4-1-fast';
 const GROK_API        = 'https://api.x.ai/v1/chat/completions';
 
 // ── 构建 Prompt ───────────────────────────────────────────────
@@ -82,14 +83,8 @@ async function scoreToken(token, tweets) {
         model:      GROK_MODEL,
         max_tokens: 256,
         messages: [
-          {
-            role:    'system',
-            content: '你是一个加密货币叙事分析专家。只输出 JSON，不要任何其他文字。',
-          },
-          {
-            role:    'user',
-            content: prompt,
-          },
+          { role: 'system', content: '你是一个加密货币叙事分析专家。只输出 JSON，不要任何其他文字。' },
+          { role: 'user',   content: prompt },
         ],
       },
       {
@@ -98,6 +93,7 @@ async function scoreToken(token, tweets) {
           'Content-Type':  'application/json',
         },
         timeout: 15000,
+        ...webshareProxy.getAxiosProxy(),   // Webshare 代理
       }
     );
 

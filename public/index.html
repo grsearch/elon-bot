@@ -231,9 +231,11 @@ function updateElon(ew){
   const pre=document.getElementById('elon-preview');
   const meta=document.getElementById('elon-meta');
   dot.className='elon-dot '+(ew.healthy?'ok':'warn');
-  pre.textContent=ew.preview||'（暂无推文）';
+  // 有错误信息时显示错误，否则显示最新推文预览
+  pre.textContent = ew.errorMsg || ew.preview || '（窗口内暂无原创推文）';
+  pre.style.color = ew.errorMsg ? 'var(--red)' : '';
   const t=ew.lastPullAt?new Date(ew.lastPullAt).toLocaleTimeString('zh-CN',{hour12:false}):'未拉取';
-  meta.innerHTML=`${ew.count} 条推文<br>${t}`;
+  meta.innerHTML=`${ew.count} 条 | ${ew.windowMins ?? 30}min窗口<br>${t}`;
 }
 
 function render(){
