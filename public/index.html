@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Elon MEME Bot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#050A0E;--bg2:#0B1218;--bg3:#101820;
+  --border:#1A2A35;--border2:#243545;
+  --cyan:#00E5FF;--cyan-dim:rgba(0,229,255,.12);
+  --green:#00FF9C;--green-dim:rgba(0,255,156,.1);
+  --red:#FF3A5C;--red-dim:rgba(255,58,92,.1);
+  --yellow:#FFD600;--yellow-dim:rgba(255,214,0,.1);
+  --purple:#B57BFF;--purple-dim:rgba(181,123,255,.1);
+  --orange:#FF8C42;--orange-dim:rgba(255,140,66,.1);
+  --text:#C8D8E8;--text2:#5E7A8A;--text3:#38505F;
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Space Grotesk',sans-serif;
+}
+html{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px}
+body{display:flex;flex-direction:column;min-height:100vh}
+
+header{display:flex;align-items:center;justify-content:space-between;padding:10px 24px;border-bottom:1px solid var(--border);background:var(--bg2);position:sticky;top:0;z-index:100}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{width:30px;height:30px;border-radius:6px;background:linear-gradient(135deg,var(--cyan),var(--purple));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#000;font-family:var(--mono)}
+.logo-text{font-family:var(--mono);font-weight:700;font-size:14px;color:var(--cyan)}
+.logo-sub{font-size:10px;color:var(--text2);letter-spacing:.06em}
+.header-right{display:flex;align-items:center;gap:10px}
+.ws-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);transition:background .3s}
+.ws-dot.on{background:var(--green);box-shadow:0 0 6px var(--green)}
+.ws-dot.err{background:var(--red)}
+.pill{display:flex;align-items:center;gap:5px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-family:var(--mono);font-size:10px}
+.pill .l{color:var(--text2)}.pill .v{color:var(--cyan);font-weight:600}
+
+.container{flex:1;display:grid;grid-template-columns:1fr 340px;gap:0}
+.main{overflow-y:auto;padding:16px 20px}
+.side{border-left:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column}
+
+/* Stats bar */
+.stats{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--border);border-radius:6px;background:var(--bg2);overflow:hidden;margin-bottom:16px}
+.sb{padding:10px 14px;border-right:1px solid var(--border)}
+.sb:last-child{border-right:none}
+.sb-l{font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--text3);font-family:var(--mono);margin-bottom:3px}
+.sb-v{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--cyan)}
+
+/* Elon status card */
+.elon-card{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:14px}
+.elon-dot{width:10px;height:10px;border-radius:50%;background:var(--text3);flex-shrink:0}
+.elon-dot.ok{background:var(--green);box-shadow:0 0 8px var(--green)}
+.elon-dot.warn{background:var(--yellow)}
+.elon-info{flex:1;min-width:0}
+.elon-title{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--cyan);margin-bottom:3px}
+.elon-preview{font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.elon-meta{font-family:var(--mono);font-size:10px;color:var(--text3);margin-left:auto;flex-shrink:0;text-align:right;line-height:1.6}
+
+/* Section */
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.sec-title{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text2);display:flex;align-items:center;gap:7px}
+.sec-title::before{content:'';width:3px;height:11px;background:var(--cyan);border-radius:2px;display:inline-block}
+.badge{background:var(--cyan-dim);color:var(--cyan);border:1px solid rgba(0,229,255,.2);border-radius:10px;padding:1px 7px;font-size:10px;font-family:var(--mono)}
+
+/* Token cards */
+#tokens{display:flex;flex-direction:column;gap:10px}
+.empty{display:flex;flex-direction:column;align-items:center;padding:50px 20px;color:var(--text3);text-align:center;border:1px dashed var(--border);border-radius:6px}
+.empty p{font-size:11px;line-height:1.8}
+
+.tc{background:var(--bg2);border:1px solid var(--border);border-radius:6px;overflow:hidden;border-left:3px solid var(--green)}
+.tc-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 8px;border-bottom:1px solid var(--border)}
+.tc-sym{font-family:var(--mono);font-weight:700;font-size:15px;color:#fff}
+.tc-addr{font-family:var(--mono);font-size:10px;color:var(--text2);text-decoration:none;border-bottom:1px dashed var(--border2)}
+.tc-addr:hover{color:var(--cyan)}
+.score-badge{padding:2px 8px;border-radius:3px;font-family:var(--mono);font-size:11px;font-weight:700}
+.score-badge.high{background:var(--green-dim);color:var(--green);border:1px solid rgba(0,255,156,.25)}
+.score-badge.med{background:var(--yellow-dim);color:var(--yellow);border:1px solid rgba(255,214,0,.25)}
+
+.tc-body{display:grid;grid-template-columns:repeat(4,1fr)}
+.m{padding:8px 12px;border-right:1px solid var(--border)}
+.m:last-child{border-right:none}
+.ml{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:3px;font-family:var(--mono)}
+.mv{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--text)}
+.mv.g{color:var(--green)}.mv.y{color:var(--yellow)}.mv.p{color:var(--purple)}
+
+.tc-elon{padding:8px 14px;background:var(--bg3);border-top:1px solid var(--border);font-size:11px;color:var(--text2)}
+.tc-elon .match-type{display:inline-block;background:var(--purple-dim);color:var(--purple);border:1px solid rgba(181,123,255,.25);border-radius:3px;font-family:var(--mono);font-size:9px;padding:1px 6px;margin-right:6px}
+.tc-tweet{padding:6px 14px 10px;font-size:10px;color:var(--text3);font-style:italic;border-top:1px solid var(--border);background:var(--bg3)}
+
+/* Side panel */
+.side-sec{padding:14px}
+.side-sec+.side-sec{border-top:1px solid var(--border)}
+#log{display:flex;flex-direction:column;gap:5px}
+
+.le{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:7px 9px;display:grid;grid-template-columns:auto 1fr auto;gap:5px;align-items:start}
+.le-type{font-family:var(--mono);font-size:10px;font-weight:700;padding:1px 5px;border-radius:2px;white-space:nowrap}
+.le-type.BUY{background:var(--green-dim);color:var(--green)}
+.le-type.SKIP{background:var(--bg);color:var(--text3);border:1px solid var(--border)}
+.le-type.BUY_FAILED{background:var(--red-dim);color:var(--red)}
+.le-info{display:flex;flex-direction:column;gap:2px;min-width:0}
+.le-sym{font-family:var(--mono);font-size:11px;font-weight:600;color:#fff}
+.le-r{font-size:10px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.le-score{font-family:var(--mono);font-size:10px;margin-left:auto;color:var(--text2);white-space:nowrap}
+.le-time{font-family:var(--mono);font-size:9px;color:var(--text3)}
+
+#toast-container{position:fixed;bottom:18px;right:18px;display:flex;flex-direction:column;gap:6px;z-index:9999}
+.toast{background:var(--bg2);border:1px solid var(--border2);border-radius:6px;padding:9px 12px;min-width:200px;font-family:var(--mono);font-size:11px;animation:tIn .2s ease}
+@keyframes tIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.toast.buy{border-left:3px solid var(--green)}
+.toast.skip{border-left:3px solid var(--text3)}
+.toast.info{border-left:3px solid var(--cyan)}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <div class="logo-icon">X</div>
+    <div>
+      <div class="logo-text">ELON MEME BOT</div>
+      <div class="logo-sub">pump.fun迁移 · Claude评分 · Jupiter买入</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="pill"><span class="l">买入</span><span class="v" id="ph-sol">2 SOL</span></div>
+    <div class="pill"><span class="l">阈值</span><span class="v" id="ph-thr">0.65</span></div>
+    <div class="pill"><span class="l">Elon窗口</span><span class="v" id="ph-win">4h</span></div>
+    <div class="ws-dot" id="wdot"></div>
+    <span style="font-family:var(--mono);font-size:11px;color:var(--text2)" id="clock"></span>
+  </div>
+</header>
+
+<div class="container">
+  <div class="main">
+    <div class="stats">
+      <div class="sb"><div class="sb-l">买入代币</div><div class="sb-v" id="s-tokens">0</div></div>
+      <div class="sb"><div class="sb-l">今日买入</div><div class="sb-v" style="color:var(--green)" id="s-buys">0</div></div>
+      <div class="sb"><div class="sb-l">今日跳过</div><div class="sb-v" style="color:var(--text3)" id="s-skips">0</div></div>
+      <div class="sb"><div class="sb-l">买入失败</div><div class="sb-v" style="color:var(--red)" id="s-fails">0</div></div>
+      <div class="sb"><div class="sb-l">运行时间</div><div class="sb-v" style="font-size:13px;color:var(--yellow)" id="s-uptime">0s</div></div>
+    </div>
+
+    <!-- Elon状态 -->
+    <div class="elon-card" id="elon-card">
+      <div class="elon-dot" id="elon-dot"></div>
+      <div class="elon-info">
+        <div class="elon-title">Elon Musk 推文缓存</div>
+        <div class="elon-preview" id="elon-preview">等待拉取...</div>
+      </div>
+      <div class="elon-meta" id="elon-meta">— 条推文<br>— </div>
+    </div>
+
+    <div class="sec-hdr">
+      <span class="sec-title">持仓代币 <span class="badge" id="tok-badge">0</span></span>
+      <span style="font-family:var(--mono);font-size:9px;color:var(--text3)">仅展示已买入持仓 · 无止损止盈</span>
+    </div>
+
+    <div id="tokens">
+      <div class="empty"><p>等待 pump.fun 迁移信号<br/><code style="color:var(--cyan);font-size:10px">POST /webhook/add-token</code></p></div>
+    </div>
+  </div>
+
+  <div class="side">
+    <div class="side-sec" style="flex:1">
+      <div class="sec-hdr">
+        <span class="sec-title">操作日志</span>
+        <span class="badge" id="log-badge">0</span>
+      </div>
+      <div id="log"><div style="font-family:var(--mono);font-size:10px;color:var(--text3);text-align:center;padding:24px 0">暂无记录</div></div>
+    </div>
+  </div>
+</div>
+<div id="toast-container"></div>
+
+<script>
+const WS_URL = `ws://${location.host}/ws`;
+let ws, tokenData={}, logData=[], buys=0, skips=0, fails=0;
+
+setInterval(()=>{ document.getElementById('clock').textContent=new Date().toLocaleTimeString('zh-CN',{hour12:false}); },1000);
+
+function connect(){
+  ws=new WebSocket(WS_URL);
+  ws.onopen=()=>dot('on');
+  ws.onclose=()=>{ dot(''); setTimeout(connect,3000); };
+  ws.onerror=()=>dot('err');
+  ws.onmessage=(e)=>{ try{handle(JSON.parse(e.data));}catch(_){} };
+}
+function dot(c){ const d=document.getElementById('wdot'); d.className='ws-dot'+(c?' '+c:''); }
+
+function handle(msg){
+  if(msg.type==='snapshot'||msg.type==='update'){
+    const d=msg.data;
+    tokenData={};
+    (d.tokens||[]).forEach(t=>tokenData[t.address]=t);
+    logData=d.tradeLog||[];
+    buys=logData.filter(l=>l.type==='BUY').length;
+    skips=logData.filter(l=>l.type==='SKIP').length;
+    fails=logData.filter(l=>l.type==='BUY_FAILED').length;
+    updateElon(d.elonWatcher);
+    render(); updateStats(); updateUptime(d.uptime);
+  } else if(msg.type==='token_added'){
+    tokenData[msg.data.address]=msg.data;
+    buys++; render(); updateStats();
+    toast(`买入: ${msg.data.symbol} score=${msg.data.elonScore?.toFixed(2)}`,'buy');
+  } else if(msg.type==='token_removed'){
+    delete tokenData[msg.data.address];
+    const el=document.querySelector(`.tc[data-a="${msg.data.address}"]`);
+    if(el)el.remove();
+    updateStats();
+  } else if(msg.type==='token_skipped'){
+    skips++;
+    logData.unshift({id:Date.now(),time:new Date().toISOString(),type:'SKIP',symbol:msg.data.symbol,address:msg.data.address,score:msg.data.score,reason:msg.data.reason});
+    if(logData.length>200)logData.length=200;
+    prependLog(logData[0]); document.getElementById('log-badge').textContent=logData.length;
+    updateStats();
+    toast(`跳过: ${msg.data.symbol} score=${msg.data.score?.toFixed(2)}`,'skip');
+  } else if(msg.type==='trade_log'){
+    const d=msg.data;
+    if(d.type==='BUY')buys++;
+    else if(d.type==='SKIP')skips++;
+    else if(d.type==='BUY_FAILED')fails++;
+    logData.unshift(d); if(logData.length>200)logData.length=200;
+    prependLog(d); document.getElementById('log-badge').textContent=logData.length;
+    updateStats();
+  }
+}
+
+function updateElon(ew){
+  if(!ew)return;
+  const dot=document.getElementById('elon-dot');
+  const pre=document.getElementById('elon-preview');
+  const meta=document.getElementById('elon-meta');
+  dot.className='elon-dot '+(ew.healthy?'ok':'warn');
+  pre.textContent=ew.preview||'（暂无推文）';
+  const t=ew.lastPullAt?new Date(ew.lastPullAt).toLocaleTimeString('zh-CN',{hour12:false}):'未拉取';
+  meta.innerHTML=`${ew.count} 条推文<br>${t}`;
+}
+
+function render(){
+  const cont=document.getElementById('tokens');
+  const tks=Object.values(tokenData);
+  document.getElementById('tok-badge').textContent=tks.length;
+  if(!tks.length){
+    cont.innerHTML='<div class="empty"><p>等待 pump.fun 迁移信号<br/><code style="color:var(--cyan);font-size:10px">POST /webhook/add-token</code></p></div>';
+    return;
+  }
+  cont.querySelector('.empty')?.remove();
+  tks.forEach(t=>upsert(t));
+  cont.querySelectorAll('.tc').forEach(c=>{ if(!tokenData[c.dataset.a])c.remove(); });
+
+  const logEl=document.getElementById('log');
+  if(!logData.length){ logEl.innerHTML='<div style="font-family:var(--mono);font-size:10px;color:var(--text3);text-align:center;padding:24px 0">暂无记录</div>'; return; }
+  logEl.innerHTML=logData.slice(0,100).map(logHTML).join('');
+  document.getElementById('log-badge').textContent=logData.length;
+}
+
+function upsert(t){
+  const cont=document.getElementById('tokens');
+  let card=cont.querySelector(`.tc[data-a="${t.address}"]`);
+  if(!card){ card=document.createElement('div'); card.className='tc'; card.dataset.a=t.address; cont.insertBefore(card,cont.firstChild); }
+  const sa=t.address.slice(0,6)+'...'+t.address.slice(-4);
+  const gmgn=`https://gmgn.ai/sol/token/${t.address}`;
+  const sc=t.elonScore??0;
+  const scCls=sc>=0.8?'high':'med';
+  const fdv=t.fdv?'$'+fmt(t.fdv):'—';
+  const lp=t.lp?'$'+fmt(t.lp):'—';
+  const ep=t.entryPrice?t.entryPrice.toExponential(4):'—';
+  const bal=t.tokenBalance>0?fmtN(t.tokenBalance):'—';
+  const mt=t.elonMatchType||'—';
+  const reason=t.elonReason||'—';
+  const tweet=t.elonTweet||'';
+  card.innerHTML=`
+    <div class="tc-head">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="tc-sym">${t.symbol}</span>
+        <a class="tc-addr" href="${gmgn}" target="_blank">${sa} ↗</a>
+      </div>
+      <span class="score-badge ${scCls}">score ${sc.toFixed(2)}</span>
+    </div>
+    <div class="tc-body">
+      <div class="m"><div class="ml">入场价</div><div class="mv y">${ep}</div></div>
+      <div class="m"><div class="ml">FDV</div><div class="mv">${fdv}</div></div>
+      <div class="m"><div class="ml">LP</div><div class="mv">${lp}</div></div>
+      <div class="m"><div class="ml">代币余额</div><div class="mv g">${bal}</div></div>
+    </div>
+    <div class="tc-elon">
+      <span class="match-type">${mt}</span>${reason}
+    </div>
+    ${tweet?`<div class="tc-tweet">"${tweet.slice(0,100)}"</div>`:''}
+  `;
+}
+
+function logHTML(d){
+  const t=new Date(d.time).toLocaleTimeString('zh-CN',{hour12:false});
+  const sc=d.score!=null?` ${d.score.toFixed(2)}`:'';
+  return `<div class="le">
+    <span class="le-type ${d.type}">${d.type}</span>
+    <div class="le-info"><span class="le-sym">${d.symbol||'?'}</span><span class="le-r">${d.reason||'—'}</span></div>
+    <div style="text-align:right"><div class="le-score">${sc}</div><div class="le-time">${t}</div></div>
+  </div>`;
+}
+
+function prependLog(d){
+  const logEl=document.getElementById('log');
+  logEl.querySelector('[data-ph]')?.remove();
+  const el=document.createElement('div');
+  el.innerHTML=logHTML(d);
+  logEl.insertBefore(el.firstChild,logEl.firstChild);
+}
+
+function updateStats(){
+  document.getElementById('s-tokens').textContent=Object.keys(tokenData).length;
+  document.getElementById('s-buys').textContent=buys;
+  document.getElementById('s-skips').textContent=skips;
+  document.getElementById('s-fails').textContent=fails;
+}
+function updateUptime(s){
+  const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),ss=Math.floor(s%60);
+  document.getElementById('s-uptime').textContent=h?`${h}h${m}m`:`${m}m${ss}s`;
+}
+function fmt(n){
+  if(n>=1e9)return(n/1e9).toFixed(2)+'B';
+  if(n>=1e6)return(n/1e6).toFixed(2)+'M';
+  if(n>=1e3)return(n/1e3).toFixed(1)+'K';
+  return n.toFixed(0);
+}
+function fmtN(n){
+  if(n>=1e9)return(n/1e9).toFixed(2)+'B';
+  if(n>=1e6)return(n/1e6).toFixed(2)+'M';
+  return n.toLocaleString();
+}
+function toast(msg,type='info'){
+  const c=document.getElementById('toast-container');
+  const el=document.createElement('div');
+  el.className=`toast ${type}`;el.textContent=msg;
+  c.appendChild(el);
+  setTimeout(()=>el.remove(),5000);
+}
+connect();
+</script>
+</body>
+</html>
