@@ -7,7 +7,7 @@ const logger = require('./logger');
 const BEARER_TOKEN    = process.env.X_BEARER_TOKEN || '';
 const ELON_USER_ID    = '44196397';           // @elonmusk 固定 ID
 const REFRESH_SEC     = parseInt(process.env.ELON_POLL_SEC || '60');
-const WINDOW_HOURS    = parseFloat(process.env.ELON_WINDOW_HOURS || '4');
+const WINDOW_HOURS    = parseFloat(process.env.ELON_WINDOW_HOURS || '0.5'); // 默认30分钟
 const MAX_RESULTS     = 20;                   // X API 单次最多 100，20 条足够
 
 let _tweets   = [];      // [{ id, text, created_at }]
@@ -33,7 +33,7 @@ async function _fetchTweets() {
           max_results:  MAX_RESULTS,
           start_time:   startTime,
           tweet_fields: 'created_at,text',
-          exclude:      'retweets',   // 过滤转推，只要原创
+          exclude:      'retweets,replies',  // 过滤转推 + 过滤回复，只保留原创推文
         },
         timeout: 10000,
       }
